@@ -1,0 +1,47 @@
+services:
+  redmine:
+    image: redmine:latest
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: production
+      REDMINE_DB_MYSQL: db
+      REDMINE_DB_DATABASE: redmine
+      REDMINE_DB_USERNAME: redmine
+      REDMINE_DB_PASSWORD: redmine_password
+      REDMINE_NO_DB_MIGRATE: "false"
+      REDMINE_PLUGINS_MIGRATE: "true"
+      REDMINE_SECRET_KEY_BASE: hogefugapiyofoobarbaz
+    volumes:
+      - ./redmine/files:/usr/src/redmine/files
+      - ./database.yml:/usr/src/redmine/config/database.yml
+      - ./secrets.yml:/usr/src/redmine/config/secrets.yml
+    depends_on:
+      - db
+    networks:
+      - redmine-network
+    command: >
+      bash -c "
+        wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh &&
+        chmod +x wait-for-it.sh &&
+        ./wait-for-it.sh db:3306 --timeout=60 -- bundle exec rails db:migrate &&
+        bundle exec rake redmine:load_default_data REDMINE_LANG=en &&
+        bundle exec rails server -b 0.0.0.0
+      "
+  db:
+    image: mysql:5.7
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: redmine
+      MYSQL_USER: redmine
+      MYSQL_PASSWORD: redmine_password
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+      - ./mysql.cnf:/etc/mysql/conf.d/custom.cnf
+
+    networks:
+      - redmine-network
+
+networks:
+  redmine-network:
