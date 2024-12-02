@@ -1,6 +1,6 @@
 services:
   redmine:
-    image: redmine:latest
+    image: redmine:5.0.5
     ports:
       - "3000:3000"
     environment:
